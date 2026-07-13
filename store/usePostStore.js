@@ -1,5 +1,5 @@
 import { getAuth } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import { create } from "zustand";
 import { db } from "../firebaseConfig";
 import { sendLikeNotification } from "../services/notificationService";
@@ -87,6 +87,73 @@ const usePostStore = create((set, get) => ({
       await undislikePost(postId, user.uid);
     } else {
       await dislikePost(postId, user.uid);
+    }
+  },
+
+  // ✅ Upload image to Cloudinary (same preset/cloud you already use in createPost)
+  uploadImageToCloudinary: async (imageUri) => {
+    const formData = new FormData();
+    formData.append("file", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: `post_${Date.now()}.jpg`,
+    });
+    formData.append("upload_preset", "SocialConnectApp_Preset");
+
+    const response = await fetch(
+      "https://api.cloudinary.com/v1_1/drunior0e/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+    const data = await response.json();
+    if (!data.secure_url) {
+      throw new Error("Image upload failed");
+    }
+    return data.secure_url;
+  },
+
+  // ✅ Update post — uploads new image to Cloudinary ONLY if it's a new local file
+  updatePost: async (postId, newText, newImageUri, existingImageUrl) => {
+    try {
+      let finalImageUrl = existingImageUrl || null;
+
+      // If the image is a local file (user picked a new one), upload it.
+      // If it's already an https:// Cloudinary URL, it means it wasn't changed — skip upload.
+      const isNewLocalImage =
+        newImageUri && !newImageUri.startsWith("https://");
+
+      if (isNewLocalImage) {
+        finalImageUrl = await get().uploadImageToCloudinary(newImageUri);
+      } else if (newImageUri === null) {
+        finalImageUrl = null; // user removed the image
+      } else {
+        finalImageUrl = newImageUri; // unchanged existing URL
+      }
+
+      const postRef = doc(db, "posts", postId);
+      await updateDoc(postRef, {
+        text: newText || "",
+        imageUrl: finalImageUrl,
+        updatedAt: Date.now(),
+      });
+      // onSnapshot listener updates local `posts` state automatically
+    } catch (error) {
+      console.log("Error updating post:", error.message);
+      throw error;
+    }
+  },
+
+  // ✅ Delete post — Firestore only, Cloudinary image left as-is (optional cleanup skipped)
+  deletePost: async (postId) => {
+    try {
+      const postRef = doc(db, "posts", postId);
+      await deleteDoc(postRef);
+      // onSnapshot listener removes it from local `posts` state automatically
+    } catch (error) {
+      console.log("Error deleting post:", error.message);
+      throw error;
     }
   },
 }));

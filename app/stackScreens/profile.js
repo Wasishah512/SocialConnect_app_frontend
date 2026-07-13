@@ -26,7 +26,7 @@ export default function UserProfile() {
   const { userId } = useLocalSearchParams();
   const resolvedId = Array.isArray(userId) ? userId[0] : userId;
 
-  const { user } = useAuthStore();
+  const { user, userProfile } = useAuthStore();
   const { posts, toggleLike, toggleDislike } = usePostStore();
 
   const [userData, setUserData] = useState(null);
@@ -85,6 +85,18 @@ export default function UserProfile() {
     }
   };
 
+  // ✅ Navigate to chat screen with this user
+  const handleMessage = () => {
+    router.push({
+      pathname: "/stackScreens/chatScreen",
+      params: {
+        otherUserId: resolvedId,
+        otherUserName: userData?.name || "User",
+        otherUserPhoto: userData?.photoURL || "",
+      },
+    });
+  };
+
   const formatDate = (timestamp) => {
     if (!timestamp?.seconds) return "—";
     return new Date(timestamp.seconds * 1000).toDateString();
@@ -133,38 +145,58 @@ export default function UserProfile() {
         Member since {formatDate(userData?.createdAt)}
       </Text>
 
-      {/* ✅ Follow / Unfollow button */}
+      {/* ✅ Follow / Message button row */}
       {!isOwnProfile && (
-        <TouchableOpacity
-          style={[styles.followBtn, isFollowing && styles.followingBtn]}
-          onPress={handleToggleFollow}
-          disabled={followLoading}
-          activeOpacity={0.8}
-        >
-          {followLoading ? (
-            <ActivityIndicator
-              size="small"
-              color={isFollowing ? "#4F46E5" : "#fff"}
-            />
-          ) : (
-            <>
-              <Ionicons
-                name={isFollowing ? "checkmark" : "person-add-outline"}
-                size={16}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[
+              styles.followBtn,
+              isFollowing && styles.followingBtn,
+              styles.actionRowBtn,
+            ]}
+            onPress={handleToggleFollow}
+            disabled={followLoading}
+            activeOpacity={0.8}
+          >
+            {followLoading ? (
+              <ActivityIndicator
+                size="small"
                 color={isFollowing ? "#4F46E5" : "#fff"}
-                style={{ marginRight: 6 }}
               />
-              <Text
-                style={[
-                  styles.followBtnText,
-                  isFollowing && styles.followingBtnText,
-                ]}
-              >
-                {isFollowing ? "Following" : "Follow"}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
+            ) : (
+              <>
+                <Ionicons
+                  name={isFollowing ? "checkmark" : "person-add-outline"}
+                  size={16}
+                  color={isFollowing ? "#4F46E5" : "#fff"}
+                  style={{ marginRight: 6 }}
+                />
+                <Text
+                  style={[
+                    styles.followBtnText,
+                    isFollowing && styles.followingBtnText,
+                  ]}
+                >
+                  {isFollowing ? "Following" : "Follow"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.messageBtn, styles.actionRowBtn]}
+            onPress={handleMessage}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={16}
+              color="#4F46E5"
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.messageBtnText}>Message</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* ✅ Followers / Following row */}
@@ -382,17 +414,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontWeight: "600",
   },
-  // ✅ Follow button styles
+  // ✅ Follow + Message row
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 18,
+    width: "100%",
+    justifyContent: "center",
+  },
+  actionRowBtn: {
+    flex: 1,
+    maxWidth: 150,
+  },
   followBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#4F46E5",
-    paddingHorizontal: 28,
     paddingVertical: 10,
     borderRadius: 22,
-    marginBottom: 18,
-    minWidth: 130,
     shadowColor: "#4F46E5",
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -408,6 +448,17 @@ const styles = StyleSheet.create({
   },
   followBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   followingBtnText: { color: "#4F46E5" },
+  messageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: "#C7D2FE",
+  },
+  messageBtnText: { color: "#4F46E5", fontWeight: "700", fontSize: 14 },
   // ✅ Followers/Following row
   followRow: {
     flexDirection: "row",

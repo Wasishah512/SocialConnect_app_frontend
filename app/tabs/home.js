@@ -29,6 +29,7 @@ import {
 } from "../../services/notificationService";
 import { sendSocketNotification } from "../../services/socketService";
 import useAuthStore from "../../store/useAuthStore";
+import useChatStore from "../../store/useChatStore";
 import useNotificationStore from "../../store/useNotificationStore";
 import usePostStore from "../../store/usePostStore";
 
@@ -38,6 +39,7 @@ export default function FeedScreen() {
   const { posts, loading, createPost, toggleLike, toggleDislike } =
     usePostStore();
   const { unreadCount } = useNotificationStore();
+  const { totalUnread } = useChatStore();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [postText, setPostText] = useState("");
@@ -529,6 +531,24 @@ export default function FeedScreen() {
       <View style={styles.topBar}>
         <Text style={styles.title}>Social Feed</Text>
         <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => router.push("/stackScreens/chatListScreen")}
+            style={{ position: "relative" }}
+          >
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={26}
+              color="#111827"
+            />
+            {totalUnread > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {totalUnread > 9 ? "9+" : totalUnread}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
           {/* ✅ Search toggle */}
           <TouchableOpacity onPress={handleToggleSearch}>
             <Ionicons
